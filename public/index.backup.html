@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dankoe</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      background: #f4f4f4;
+      min-height: 100vh;
+    }
+
+    .app {
+      max-width: 500px;
+      min-height: 100vh;
+      margin: auto;
+      background: white;
+    }
+
+    header {
+      padding: 20px;
+      border-bottom: 1px solid #ddd;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      font-size: 28px;
+      font-weight: bold;
+    }
+
+    .ai {
+      background: #111;
+      color: white;
+      padding: 8px 13px;
+      border-radius: 20px;
+      font-size: 13px;
+    }
+
+    .container {
+      padding: 35px 22px;
+    }
+
+    h1 {
+      font-size: 30px;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: #666;
+      margin-bottom: 28px;
+    }
+
+    input {
+      width: 100%;
+      padding: 15px;
+      margin-bottom: 12px;
+      border: 1px solid #ccc;
+      border-radius: 12px;
+      font-size: 15px;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: #111;
+    }
+
+    button {
+      width: 100%;
+      padding: 15px;
+      border: none;
+      border-radius: 12px;
+      background: #111;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 5px;
+    }
+
+    .switch {
+      text-align: center;
+      margin-top: 18px;
+      color: #666;
+      font-size: 14px;
+    }
+
+    .switch span {
+      color: #111;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .message {
+      margin-top: 15px;
+      text-align: center;
+      font-size: 14px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .home {
+      text-align: center;
+      padding-top: 50px;
+    }
+
+    .home h2 {
+      font-size: 30px;
+      margin-bottom: 10px;
+    }
+
+    .logout {
+      margin-top: 25px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="app">
+
+  <header>
+    <div class="logo">Dankoe</div>
+    <div class="ai">🤖 Dankoe AI</div>
+  </header>
+
+  <!-- AUTH SCREEN -->
+  <div id="authScreen" class="container">
+
+    <div id="loginBox">
+      <h1>Welcome back 👋</h1>
+      <p class="subtitle">Login to your Dankoe account.</p>
+
+      <input id="loginEmail" type="email" placeholder="Email address">
+      <input id="loginPassword" type="password" placeholder="Password">
+
+      <button onclick="login()">Login</button>
+
+      <div class="switch">
+        Don't have an account?
+        <span onclick="showSignup()">Sign up</span>
+      </div>
+
+      <div id="loginMessage" class="message"></div>
+    </div>
+
+    <!-- SIGN UP -->
+    <div id="signupBox" class="hidden">
+      <h1>Join Dankoe 🚀</h1>
+      <p class="subtitle">Create your free Dankoe account.</p>
+
+      <input id="signupName" type="text" placeholder="Your name">
+      <input id="signupEmail" type="email" placeholder="Email address">
+      <input id="signupPassword" type="password" placeholder="Password">
+
+      <button onclick="signup()">Create Account</button>
+
+      <div class="switch">
+        Already have an account?
+        <span onclick="showLogin()">Login</span>
+      </div>
+
+      <div id="signupMessage" class="message"></div>
+    </div>
+
+  </div>
+
+  <!-- HOME -->
+  <div id="homeScreen" class="container hidden">
+
+    <div class="home">
+      <h2>Welcome to Dankoe 🎉</h2>
+      <p id="userEmail"></p>
+
+      <button class="logout" onclick="logout()">Logout</button>
+    </div>
+
+  </div>
+
+</div>
+
+<script type="module">
+
+  import { initializeApp } from
+  "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+
+  import {
+    getAuth,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    signOut,
+    onAuthStateChanged
+  } from
+  "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCQO7wkxCWTDxVjcVEZXxZBZi91CnG5Olg",
+    authDomain: "dankoe-a4ea6.firebaseapp.com",
+    projectId: "dankoe-a4ea6",
+    storageBucket: "dankoe-a4ea6.firebasestorage.app",
+    messagingSenderId: "590950100526",
+    appId: "1:590950100526:web:35002d5e86c4048b8e79bf"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  window.showSignup = function() {
+    document.getElementById("loginBox").classList.add("hidden");
+    document.getElementById("signupBox").classList.remove("hidden");
+  };
+
+  window.showLogin = function() {
+    document.getElementById("signupBox").classList.add("hidden");
+    document.getElementById("loginBox").classList.remove("hidden");
+  };
+
+  window.signup = async function() {
+
+    const name = document.getElementById("signupName").value.trim();
+    const email = document.getElementById("signupEmail").value.trim();
+    const password = document.getElementById("signupPassword").value;
+
+    const message = document.getElementById("signupMessage");
+
+    if (!name || !email || !password) {
+      message.textContent = "Please fill in everything.";
+      return;
+    }
+
+    if (password.length < 6) {
+      message.textContent = "Password must be at least 6 characters.";
+      return;
+    }
+
+    try {
+
+      await createUserWithEmailAndPassword(auth, email, password);
+
+      message.textContent = "Account created successfully! 🎉";
+
+    } catch (error) {
+
+      message.textContent = error.message;
+
+    }
+  };
+
+  window.login = async function() {
+
+    const email = document.getElementById("loginEmail").value.trim();
+    const password = document.getElementById("loginPassword").value;
+
+    const message = document.getElementById("loginMessage");
+
+    if (!email || !password) {
+      message.textContent = "Enter your email and password.";
+      return;
+    }
+
+    try {
+
+      await signInWithEmailAndPassword(auth, email, password);
+
+    } catch (error) {
+
+      message.textContent = error.message;
+
+    }
+  };
+
+  window.logout = async function() {
+    await signOut(auth);
+  };
+
+  onAuthStateChanged(auth, user => {
+
+    if (user) {
+
+      document.getElementById("authScreen").classList.add("hidden");
+      document.getElementById("homeScreen").classList.remove("hidden");
+
+      document.getElementById("userEmail").textContent =
+        user.email;
+
+    } else {
+
+      document.getElementById("authScreen").classList.remove("hidden");
+      document.getElementById("homeScreen").classList.add("hidden");
+
+    }
+
+  });
+
+</script>
+
+</body>
+</html>
