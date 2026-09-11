@@ -786,7 +786,16 @@ body::before {
 
         <div class="profile-card">
           <div class="profile-avatar">👤</div>
-          <h3 id="profileEmail"></h3><div id="profileBadge"></div>
+          <div style="
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  flex-wrap:wrap;
+">
+  <h3 id="profileEmail" style="margin:0;"></h3>
+  <span id="profileBadge"></span>
+</div>
           <p>Dankoe account</p>
         </div>
 
@@ -859,7 +868,7 @@ body::before {
         <small>Videos</small>
       </button>
 
-      <button onclick="showSection('profileSection', this)" class="nav-item">
+      <button onclick="openProfile()" class="nav-item">
         <span>👤</span>
         <small>Profile</small>
       </button>
