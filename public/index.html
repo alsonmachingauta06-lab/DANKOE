@@ -995,7 +995,7 @@ body::before {
             <span class="chat-time">Now</span>
           </div>
 
-          <div class="chat-item" onclick="openChat('Alson')">
+          <div class="chat-item" onclick="openChat('Alson', 'LSwSf5oJMJUDKVqezc6LlazhoP63')">
             <div class="chat-avatar">👤</div>
             <div class="chat-info">
               <strong>Alson</strong>
@@ -1151,7 +1151,12 @@ body::before {
     doc,
     setDoc,
     getDoc,
-    serverTimestamp
+    serverTimestamp,
+    collection,
+    addDoc,
+    query,
+    orderBy,
+    onSnapshot
   } from
   "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
@@ -1499,6 +1504,10 @@ window.logout = async function() {
     await signOut(auth);
   };
 
+  window.dankoeAuth = auth;
+  window.dankoeDb = db;
+  window.dankoeOwnerUids = DANKOE_OWNER_UIDS;
+
   onAuthStateChanged(auth, async user => {
 
     if (user) {
@@ -1525,6 +1534,123 @@ window.logout = async function() {
 
 
 <script id="dankoe-chats-js">
+
+function getConversationId(uid1, uid2) {
+  return [uid1, uid2].sort().join("_");
+}
+
+let activeChatUser = null;
+let activeChatUnsubscribe = null;
+
+async function ensureConversation(otherUid) {
+  if (!dankoeAuth.currentUser || !otherUid) return null;
+
+  const myUid = dankoeAuth.currentUser.uid;
+  const conversationId = getConversationId(myUid, otherUid);
+  const conversationRef = doc(dankoeDb, "conversations", conversationId);
+  const existing = await getDoc(conversationRef);
+
+  if (!existing.exists()) {
+    await setDoc(conversationRef, {
+      participants: [myUid, otherUid],
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      lastMessage: "",
+      lastMessageAt: serverTimestamp()
+    });
+  }
+
+  return conversationId;
+}
+
+async function sendFirestoreMessage() {
+  const input = document.getElementById("privateChatInput");
+  if (!input || !activeChatUser || !dankoeAuth.currentUser) return;
+
+  const text = input.value.trim();
+  if (!text) return;
+
+  try {
+    const conversationId = await ensureConversation(activeChatUser.uid);
+
+    await addDoc(
+      collection(dankoeDb, "conversations", conversationId, "messages"),
+      {
+        senderId: dankoeAuth.currentUser.uid,
+        text: text,
+        type: "text",
+        createdAt: serverTimestamp()
+      }
+    );
+
+    await setDoc(
+      doc(dankoeDb, "conversations", conversationId),
+      {
+        lastMessage: text,
+        lastMessageAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      },
+      { merge: true }
+    );
+
+    input.value = "";
+  } catch (error) {
+    console.error("Firestore message error:", error);
+    alert("Message could not be sent.");
+  }
+}
+
+function listenToFirestoreMessages(conversationId) {
+  if (activeChatUnsubscribe) {
+    activeChatUnsubscribe();
+    activeChatUnsubscribe = null;
+  }
+
+  const messages = document.getElementById("privateChatMessages");
+  if (!messages) return;
+
+  const messagesQuery = query(
+    collection(dankoeDb, "conversations", conversationId, "messages"),
+    orderBy("createdAt", "asc")
+  );
+
+  activeChatUnsubscribe = onSnapshot(
+    messagesQuery,
+    snapshot => {
+      messages.innerHTML = "";
+
+      if (snapshot.empty) {
+        messages.innerHTML = `
+          <div class="private-chat-empty">
+            <div>💬</div>
+            <strong>No messages yet</strong>
+            <p>Start a private conversation.</p>
+          </div>
+        `;
+        return;
+      }
+
+      snapshot.forEach(messageDoc => {
+        const data = messageDoc.data();
+
+        const message = document.createElement("div");
+        message.className =
+          data.senderId === dankoeAuth.currentUser.uid
+            ? "private-message mine"
+            : "private-message";
+
+        message.textContent = data.text || "";
+        messages.appendChild(message);
+      });
+
+      messages.scrollTop = messages.scrollHeight;
+    },
+    error => {
+      console.error("Firestore listener error:", error);
+    }
+  );
+}
+
 function filterChats() {
   const input = document.getElementById("chatSearch");
   const list = document.getElementById("chatList");
@@ -1548,9 +1674,16 @@ function filterChats() {
   empty.classList.toggle("hidden", visible !== 0);
 }
 
-function openChat(name) {
+function openChat(name, otherUid) {
   const chatsSection = document.getElementById("chatsSection");
-  if (!chatsSection) return;
+  if (!chatsSection || !dankoeAuth.currentUser) return;
+
+  if (!otherUid) return;
+
+  activeChatUser = {
+    uid: otherUid,
+    name: name
+  };
 
   let screen = document.getElementById("privateChatScreen");
 
@@ -1574,8 +1707,8 @@ function openChat(name) {
     <div class="private-chat-messages" id="privateChatMessages">
       <div class="private-chat-empty">
         <div>💬</div>
-        <strong>No messages yet</strong>
-        <p>Start a private conversation with ${name}.</p>
+        <strong>Loading messages...</strong>
+        <p>Connecting to Firestore...</p>
       </div>
     </div>
 
@@ -1584,16 +1717,38 @@ function openChat(name) {
         id="privateChatInput"
         type="text"
         placeholder="Type a message..."
-        onkeydown="if(event.key === 'Enter') sendPrivateMessage()"
+        onkeydown="if(event.key === 'Enter') sendFirestoreMessage()"
       >
-      <button onclick="sendPrivateMessage()">➤</button>
+      <button onclick="sendFirestoreMessage()">➤</button>
     </div>
   `;
 
   screen.classList.remove("hidden");
-  document.getElementById("chatList").classList.add("hidden");
+  document.getElementById("chatList")?.classList.add("hidden");
   document.querySelector(".chat-search")?.classList.add("hidden");
   document.querySelector(".chats-header")?.classList.add("hidden");
+
+  ensureConversation(otherUid)
+    .then(conversationId => {
+      if (conversationId) {
+        listenToFirestoreMessages(conversationId);
+      }
+    })
+    .catch(error => {
+      console.error("Could not open Firestore chat:", error);
+
+      const messages = document.getElementById("privateChatMessages");
+
+      if (messages) {
+        messages.innerHTML = `
+          <div class="private-chat-empty">
+            <div>⚠️</div>
+            <strong>Chat could not be opened</strong>
+            <p>Check the Firestore rules and console.</p>
+          </div>
+        `;
+      }
+    });
 }
 
 function closePrivateChat() {
@@ -1606,25 +1761,14 @@ function closePrivateChat() {
 }
 
 function sendPrivateMessage() {
-  const input = document.getElementById("privateChatInput");
-  const messages = document.getElementById("privateChatMessages");
-
-  if (!input || !messages) return;
-
-  const text = input.value.trim();
-  if (!text) return;
-
-  const empty = messages.querySelector(".private-chat-empty");
-  if (empty) empty.remove();
-
-  const message = document.createElement("div");
-  message.className = "private-message mine";
-  message.textContent = text;
-
-  messages.appendChild(message);
-  input.value = "";
-  messages.scrollTop = messages.scrollHeight;
+  sendFirestoreMessage();
 }
+
+window.filterChats = filterChats;
+window.openChat = openChat;
+window.closePrivateChat = closePrivateChat;
+window.sendPrivateMessage = sendPrivateMessage;
+window.sendFirestoreMessage = sendFirestoreMessage;
 </script>
 
 </body>
