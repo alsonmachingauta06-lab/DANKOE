@@ -1153,18 +1153,22 @@ window.removeDankoeVerification = async function() {
   }
 };
 
-window.openProfile = function() {
+window.openProfile = async function() {
   const profileButton = document.querySelectorAll(".nav-item")[3];
   window.showSection("profileSection", profileButton);
 
-  const email = document.getElementById("userEmail")?.textContent || "";
+  const user = auth.currentUser;
+
+  if (!user) return;
+
   const profileEmail = document.getElementById("profileEmail");
 
   if (profileEmail) {
-    profileEmail.textContent = email;
+    profileEmail.textContent = user.email || "Dankoe User";
   }
 
-  loadProfileBadge();
+  await loadProfileBadge();
+  await checkOwnerPanel();
 };
 
 window.sendMessage = async function() {
