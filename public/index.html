@@ -786,8 +786,55 @@ body::before {
 
         <div class="profile-card">
           <div class="profile-avatar">👤</div>
-          <h3 id="profileEmail"></h3>
+          <h3 id="profileEmail"></h3><div id="profileBadge"></div>
           <p>Dankoe account</p>
+        </div>
+
+        <div id="ownerPanel" class="hidden" style="
+          margin-top:18px;
+          padding:16px;
+          border-radius:16px;
+          background:rgba(70,90,180,.12);
+          border:1px solid rgba(100,150,255,.25);
+        ">
+          <h3>👑 Dankoe Owner</h3>
+          <p style="opacity:.7;font-size:13px;">
+            Manage Dankoe verification
+          </p>
+
+          <input
+            id="verifyUserUid"
+            type="text"
+            placeholder="User UID"
+            style="width:100%;margin-bottom:10px;"
+          >
+
+          <button onclick="grantDankoeVerification()" style="
+            width:100%;
+            padding:12px;
+            border:0;
+            border-radius:12px;
+            cursor:pointer;
+          ">
+            🔵 Verify User
+          </button>
+
+          <button onclick="removeDankoeVerification()" style="
+            width:100%;
+            padding:12px;
+            margin-top:8px;
+            border:0;
+            border-radius:12px;
+            cursor:pointer;
+          ">
+            ⚪ Remove Verification
+          </button>
+
+          <p id="ownerActionStatus" style="
+            margin-top:10px;
+            font-size:13px;
+            opacity:.8;
+          "></p>
         </div>
 
         <button class="logout" onclick="logout()">Logout</button>
@@ -837,6 +884,15 @@ body::before {
   } from
   "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 
+  import {
+    getFirestore,
+    doc,
+    setDoc,
+    getDoc,
+    serverTimestamp
+  } from
+  "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+
   const firebaseConfig = {
     apiKey: "AIzaSyCQO7wkxCWTDxVjcVEZXxZBZi91CnG5Olg",
     authDomain: "dankoe-a4ea6.firebaseapp.com",
@@ -848,6 +904,52 @@ body::before {
 
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
+  const db = getFirestore(app);
+
+// Dankoe official owner configuration
+const DANKOE_OWNER_UIDS = [
+  "Vai4LtZLs6QMthco157bn4PF8Jf1"
+];
+
+const DANKOE_OWNER_NUMBERS = [
+  "263786359833",
+  "263783549857"
+];
+
+function isDankoeOwner(uid) {
+  return DANKOE_OWNER_UIDS.includes(uid);
+}
+
+
+  async function createUserProfile(user) {
+    try {
+      const userRef = doc(db, "users", user.uid);
+      const existing = await getDoc(userRef);
+
+      if (!existing.exists()) {
+        await setDoc(userRef, {
+          email: user.email || "",
+          username: (user.email || "user").split("@")[0],
+          bio: "",
+          photoURL: "",
+          online: true,
+          createdAt: serverTimestamp(),
+          lastSeen: serverTimestamp()
+        });
+
+        console.log("Dankoe profile created.");
+      } else {
+        await setDoc(userRef, {
+          online: true,
+          lastSeen: serverTimestamp()
+        }, { merge: true });
+
+        console.log("Dankoe profile loaded.");
+      }
+    } catch (error) {
+      console.error("Profile error:", error);
+    }
+  }
 
   window.showSignup = function() {
     document.getElementById("loginBox").classList.add("hidden");
@@ -935,6 +1037,122 @@ window.showSection = function(sectionId, button) {
   }
 };
 
+async function loadProfileBadge() {
+  const user = auth.currentUser;
+  const badge = document.getElementById("profileBadge");
+
+  if (!user || !badge) return;
+
+  try {
+    const userRef = doc(db, "users", user.uid);
+    const snap = await getDoc(userRef);
+
+    if (snap.exists() && snap.data().verified === true) {
+      badge.innerHTML = `
+        <span style="
+          display:inline-flex;
+          align-items:center;
+          gap:5px;
+          margin-top:6px;
+          padding:4px 9px;
+          border-radius:999px;
+          background:rgba(60,150,255,.14);
+          border:1px solid rgba(80,180,255,.35);
+          color:#79caff;
+          font-size:13px;
+          font-weight:700;
+        ">
+          ✓ Verified
+        </span>
+      `;
+    } else {
+      badge.innerHTML = "";
+    }
+  } catch (error) {
+    console.error("Verification badge error:", error);
+  }
+}
+
+
+async function checkOwnerPanel() {
+  const user = auth.currentUser;
+  const panel = document.getElementById("ownerPanel");
+
+  if (!user || !panel) return;
+
+  if (isDankoeOwner(user.uid)) {
+    panel.classList.remove("hidden");
+  } else {
+    panel.classList.add("hidden");
+  }
+}
+
+window.grantDankoeVerification = async function() {
+  const user = auth.currentUser;
+  const uidInput = document.getElementById("verifyUserUid");
+  const status = document.getElementById("ownerActionStatus");
+
+  if (!user || !isDankoeOwner(user.uid)) {
+    status.textContent = "❌ Owner access required.";
+    return;
+  }
+
+  const targetUid = uidInput.value.trim();
+
+  if (!targetUid) {
+    status.textContent = "❌ Enter a user's UID.";
+    return;
+  }
+
+  try {
+    await setDoc(
+      doc(db, "users", targetUid),
+      {
+        verified: true
+      },
+      { merge: true }
+    );
+
+    status.textContent = "🔵 User verified successfully.";
+  } catch (error) {
+    console.error("Verification error:", error);
+    status.textContent = "❌ Could not verify user.";
+  }
+};
+
+window.removeDankoeVerification = async function() {
+  const user = auth.currentUser;
+  const uidInput = document.getElementById("verifyUserUid");
+  const status = document.getElementById("ownerActionStatus");
+
+  if (!user || !isDankoeOwner(user.uid)) {
+    status.textContent = "❌ Owner access required.";
+    return;
+  }
+
+  const targetUid = uidInput.value.trim();
+
+  if (!targetUid) {
+    status.textContent = "❌ Enter a user's UID.";
+    return;
+  }
+
+  try {
+    await setDoc(
+      doc(db, "users", targetUid),
+      {
+        verified: false
+      },
+      { merge: true }
+    );
+
+    status.textContent = "⚪ Verification removed.";
+  } catch (error) {
+    console.error("Verification removal error:", error);
+    status.textContent = "❌ Could not remove verification.";
+  }
+};
+
 window.openProfile = function() {
   const profileButton = document.querySelectorAll(".nav-item")[3];
   window.showSection("profileSection", profileButton);
@@ -945,6 +1163,8 @@ window.openProfile = function() {
   if (profileEmail) {
     profileEmail.textContent = email;
   }
+
+  loadProfileBadge();
 };
 
 window.sendMessage = async function() {
@@ -1013,9 +1233,12 @@ window.logout = async function() {
     await signOut(auth);
   };
 
-  onAuthStateChanged(auth, user => {
+  onAuthStateChanged(auth, async user => {
 
     if (user) {
+
+      await createUserProfile(user);
+    await checkOwnerPanel();
 
       document.getElementById("authScreen").classList.add("hidden");
       document.getElementById("homeScreen").classList.remove("hidden");
