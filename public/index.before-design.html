@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dankoe</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      background: #f4f4f4;
+      min-height: 100vh;
+    }
+
+    .app {
+      max-width: 500px;
+      min-height: 100vh;
+      margin: auto;
+      background: white;
+    }
+
+    header {
+      padding: 20px;
+      border-bottom: 1px solid #ddd;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      font-size: 28px;
+      font-weight: bold;
+    }
+
+    .ai {
+      background: #111;
+      color: white;
+      padding: 8px 13px;
+      border-radius: 20px;
+      font-size: 13px;
+    }
+
+    .container {
+      padding: 35px 22px;
+    }
+
+    h1 {
+      font-size: 30px;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: #666;
+      margin-bottom: 28px;
+    }
+
+    input {
+      width: 100%;
+      padding: 15px;
+      margin-bottom: 12px;
+      border: 1px solid #ccc;
+      border-radius: 12px;
+      font-size: 15px;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: #111;
+    }
+
+    button {
+      width: 100%;
+      padding: 15px;
+      border: none;
+      border-radius: 12px;
+      background: #111;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 5px;
+    }
+
+    .switch {
+      text-align: center;
+      margin-top: 18px;
+      color: #666;
+      font-size: 14px;
+    }
+
+    .switch span {
+      color: #111;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .message {
+      margin-top: 15px;
+      text-align: center;
+      font-size: 14px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .home {
+      text-align: center;
+      padding-top: 50px;
+    }
+
+    .home h2 {
+      font-size: 30px;
+      margin-bottom: 10px;
+    }
+
+    .logout {
+      margin-top: 25px;
+    }
+  </style>
+
+<style id="dankoe-app-style">
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.app-header h2 {
+  margin: 0;
+  font-size: 28px;
+}
+
+.app-header span {
+  color: #777;
+  font-size: 13px;
+}
+
+.icon-btn {
+  width: 45px !important;
+  height: 45px;
+  padding: 0 !important;
+  margin: 0 !important;
+  border-radius: 50% !important;
+}
+
+.section-subtitle {
+  color: #777;
+  margin-top: -8px;
+}
+
+.chat-box {
+  height: 400px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 16px;
+  padding: 15px;
+  background: #fafafa;
+}
+
+.chat-input-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.chat-input-row input {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.send-btn {
+  width: 52px !important;
+  padding: 10px !important;
+  margin: 0 !important;
+  border-radius: 50% !important;
+}
+
+.empty-section {
+  margin-top: 30px;
+  padding: 40px 20px;
+  text-align: center;
+  border: 1px solid #e5e5e5;
+  border-radius: 18px;
+}
+
+.empty-section > div {
+  font-size: 45px;
+}
+
+.empty-section p {
+  color: #777;
+}
+
+.profile-card {
+  text-align: center;
+  margin-top: 30px;
+  padding: 30px 20px;
+  border: 1px solid #e5e5e5;
+  border-radius: 18px;
+}
+
+.profile-avatar {
+  font-size: 60px;
+}
+
+.bottom-nav {
+  display: flex;
+  justify-content: space-around;
+  gap: 4px;
+  margin-top: 25px;
+  padding: 10px 5px;
+  border-top: 1px solid #e5e5e5;
+}
+
+.nav-item {
+  flex: 1;
+  background: transparent !important;
+  color: #777;
+  margin: 0 !important;
+  padding: 8px 4px !important;
+  border: 0 !important;
+}
+
+.nav-item span {
+  display: block;
+  font-size: 22px;
+}
+
+.nav-item small {
+  display: block;
+  margin-top: 3px;
+}
+
+.nav-item.active {
+  color: #000;
+  font-weight: bold;
+}
+
+@media (max-width: 500px) {
+  .container {
+    padding: 15px;
+  }
+
+  .chat-box {
+    height: 52vh;
+  }
+
+  .app-header h2 {
+    font-size: 25px;
+  }
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="app">
+
+  <header>
+    <div class="logo">Dankoe</div>
+    <div class="ai">🤖 Dankoe AI</div>
+  </header>
+
+  <!-- AUTH SCREEN -->
+  <div id="authScreen" class="container">
+
+    <div id="loginBox">
+      <h1>Welcome back 👋</h1>
+      <p class="subtitle">Login to your Dankoe account.</p>
+
+      <input id="loginEmail" type="email" placeholder="Email address">
+      <input id="loginPassword" type="password" placeholder="Password">
+
+      <button onclick="login()">Login</button>
+
+      <div class="switch">
+        Don't have an account?
+        <span onclick="showSignup()">Sign up</span>
+      </div>
+
+      <div id="loginMessage" class="message"></div>
+    </div>
+
+    <!-- SIGN UP -->
+    <div id="signupBox" class="hidden">
+      <h1>Join Dankoe 🚀</h1>
+      <p class="subtitle">Create your free Dankoe account.</p>
+
+      <input id="signupName" type="text" placeholder="Your name">
+      <input id="signupEmail" type="email" placeholder="Email address">
+      <input id="signupPassword" type="password" placeholder="Password">
+
+      <button onclick="signup()">Create Account</button>
+
+      <div class="switch">
+        Already have an account?
+        <span onclick="showLogin()">Login</span>
+      </div>
+
+      <div id="signupMessage" class="message"></div>
+    </div>
+
+  </div>
+
+  <!-- HOME -->
+<div id="homeScreen" class="container hidden">
+  <div class="home">
+
+    <div class="app-header">
+      <div>
+        <h2>Dankoe</h2>
+        <span>Everything. Together. 🤖</span>
+      </div>
+      <button class="icon-btn" onclick="openProfile()">👤</button>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="appContent">
+
+      <!-- AI -->
+      <section id="aiSection" class="app-section">
+        <h3>Dankoe AI 🤖</h3>
+        <p class="section-subtitle">Your intelligent assistant</p>
+
+        <div id="chatBox" class="chat-box"></div>
+
+        <div class="chat-input-row">
+          <input
+            id="chatInput"
+            type="text"
+            placeholder="Ask Dankoe anything..."
+          >
+          <button onclick="sendMessage()" class="send-btn">➤</button>
+        </div>
+      </section>
+
+      <!-- CHATS -->
+      <section id="chatsSection" class="app-section hidden">
+        <h3>Chats 💬</h3>
+        <p class="section-subtitle">Message your contacts</p>
+
+        <div class="empty-section">
+          <div>💬</div>
+          <h3>Your chats</h3>
+          <p>Contacts and messaging are coming next.</p>
+        </div>
+      </section>
+
+      <!-- VIDEOS -->
+      <section id="videosSection" class="app-section hidden">
+        <h3>Videos 🎥</h3>
+        <p class="section-subtitle">Short videos from Dankoe</p>
+
+        <div class="empty-section">
+          <div>🎬</div>
+          <h3>Dankoe Videos</h3>
+          <p>Your short-video feed will live here.</p>
+        </div>
+      </section>
+
+      <!-- PROFILE -->
+      <section id="profileSection" class="app-section hidden">
+        <h3>Profile 👤</h3>
+
+        <div class="profile-card">
+          <div class="profile-avatar">👤</div>
+          <h3 id="profileEmail"></h3>
+          <p>Dankoe account</p>
+        </div>
+
+        <button class="logout" onclick="logout()">Logout</button>
+      </section>
+
+    </div>
+
+    <!-- BOTTOM NAV -->
+    <nav class="bottom-nav">
+      <button onclick="showSection('aiSection', this)" class="nav-item active">
+        <span>🤖</span>
+        <small>AI</small>
+      </button>
+
+      <button onclick="showSection('chatsSection', this)" class="nav-item">
+        <span>💬</span>
+        <small>Chats</small>
+      </button>
+
+      <button onclick="showSection('videosSection', this)" class="nav-item">
+        <span>🎥</span>
+        <small>Videos</small>
+      </button>
+
+      <button onclick="showSection('profileSection', this)" class="nav-item">
+        <span>👤</span>
+        <small>Profile</small>
+      </button>
+    </nav>
+
+  </div>
+</div>
+
+
+
+<script type="module">
+
+  import { initializeApp } from
+  "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+
+  import {
+    getAuth,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    signOut,
+    onAuthStateChanged
+  } from
+  "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCQO7wkxCWTDxVjcVEZXxZBZi91CnG5Olg",
+    authDomain: "dankoe-a4ea6.firebaseapp.com",
+    projectId: "dankoe-a4ea6",
+    storageBucket: "dankoe-a4ea6.firebasestorage.app",
+    messagingSenderId: "590950100526",
+    appId: "1:590950100526:web:35002d5e86c4048b8e79bf"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  window.showSignup = function() {
+    document.getElementById("loginBox").classList.add("hidden");
+    document.getElementById("signupBox").classList.remove("hidden");
+  };
+
+  window.showLogin = function() {
+    document.getElementById("signupBox").classList.add("hidden");
+    document.getElementById("loginBox").classList.remove("hidden");
+  };
+
+  window.signup = async function() {
+
+    const name = document.getElementById("signupName").value.trim();
+    const email = document.getElementById("signupEmail").value.trim();
+    const password = document.getElementById("signupPassword").value;
+
+    const message = document.getElementById("signupMessage");
+
+    if (!name || !email || !password) {
+      message.textContent = "Please fill in everything.";
+      return;
+    }
+
+    if (password.length < 6) {
+      message.textContent = "Password must be at least 6 characters.";
+      return;
+    }
+
+    try {
+
+      await createUserWithEmailAndPassword(auth, email, password);
+
+      message.textContent = "Account created successfully! 🎉";
+
+    } catch (error) {
+
+      message.textContent = error.message;
+
+    }
+  };
+
+  window.login = async function() {
+
+    const email = document.getElementById("loginEmail").value.trim();
+    const password = document.getElementById("loginPassword").value;
+
+    const message = document.getElementById("loginMessage");
+
+    if (!email || !password) {
+      message.textContent = "Enter your email and password.";
+      return;
+    }
+
+    try {
+
+      await signInWithEmailAndPassword(auth, email, password);
+
+    } catch (error) {
+
+      message.textContent = error.message;
+
+    }
+  };
+
+  const dankoeSessionId =
+  localStorage.getItem("dankoeSessionId") ||
+  crypto.randomUUID();
+
+localStorage.setItem("dankoeSessionId", dankoeSessionId);
+
+window.showSection = function(sectionId, button) {
+  document.querySelectorAll(".app-section").forEach(section => {
+    section.classList.add("hidden");
+  });
+
+  document.getElementById(sectionId).classList.remove("hidden");
+
+  document.querySelectorAll(".nav-item").forEach(item => {
+    item.classList.remove("active");
+  });
+
+  if (button) {
+    button.classList.add("active");
+  }
+};
+
+window.openProfile = function() {
+  const profileButton = document.querySelectorAll(".nav-item")[3];
+  window.showSection("profileSection", profileButton);
+
+  const email = document.getElementById("userEmail")?.textContent || "";
+  const profileEmail = document.getElementById("profileEmail");
+
+  if (profileEmail) {
+    profileEmail.textContent = email;
+  }
+};
+
+window.sendMessage = async function() {
+  const input = document.getElementById("chatInput");
+  const chatBox = document.getElementById("chatBox");
+  const text = input.value.trim();
+
+  if (!text) return;
+
+  const userMessage = document.createElement("div");
+  userMessage.style.marginBottom = "12px";
+
+  const userLabel = document.createElement("strong");
+  userLabel.textContent = "You: ";
+
+  userMessage.appendChild(userLabel);
+  userMessage.appendChild(document.createTextNode(text));
+  chatBox.appendChild(userMessage);
+
+  input.value = "";
+
+  const aiMessage = document.createElement("div");
+  aiMessage.style.marginBottom = "18px";
+
+  const aiLabel = document.createElement("strong");
+  aiLabel.textContent = "Dankoe: ";
+
+  const aiText = document.createElement("span");
+  aiText.textContent = "Thinking...";
+
+  aiMessage.appendChild(aiLabel);
+  aiMessage.appendChild(aiText);
+  chatBox.appendChild(aiMessage);
+
+  chatBox.scrollTop = chatBox.scrollHeight;
+
+  try {
+    const response = await fetch("https://dankoe.onrender.com/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        message: text,
+        sessionId: dankoeSessionId
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "AI request failed");
+    }
+
+    aiText.textContent = data.answer || "I couldn't generate a response.";
+
+  } catch (error) {
+    console.error(error);
+    aiText.textContent = "Sorry, Dankoe AI is temporarily unavailable. Please try again.";
+  }
+
+  chatBox.scrollTop = chatBox.scrollHeight;
+};
+
+window.logout = async function() {
+    await signOut(auth);
+  };
+
+  onAuthStateChanged(auth, user => {
+
+    if (user) {
+
+      document.getElementById("authScreen").classList.add("hidden");
+      document.getElementById("homeScreen").classList.remove("hidden");
+
+      document.getElementById("userEmail").textContent =
+        user.email;
+
+    } else {
+
+      document.getElementById("authScreen").classList.remove("hidden");
+      document.getElementById("homeScreen").classList.add("hidden");
+
+    }
+
+  });
+
+</script>
+
+</body>
+</html>

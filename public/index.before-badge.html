@@ -786,72 +786,8 @@ body::before {
 
         <div class="profile-card">
           <div class="profile-avatar">👤</div>
-          <div style="
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:7px;
-  flex-wrap:nowrap;
-  width:100%;
-  overflow:hidden;
-">
-  <h3 id="profileEmail" style="
-    margin:0;
-    font-size:clamp(15px, 4.5vw, 22px);
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-  "></h3>
-  <span id="profileBadge" style="flex-shrink:0;"></span>
-</div>
+          <h3 id="profileEmail"></h3>
           <p>Dankoe account</p>
-        </div>
-
-        <div id="ownerPanel" class="hidden" style="
-          margin-top:18px;
-          padding:16px;
-          border-radius:16px;
-          background:rgba(70,90,180,.12);
-          border:1px solid rgba(100,150,255,.25);
-        ">
-          <h3>👑 Dankoe Owner</h3>
-          <p style="opacity:.7;font-size:13px;">
-            Manage Dankoe verification
-          </p>
-
-          <input
-            id="verifyUserUid"
-            type="text"
-            placeholder="User UID"
-            style="width:100%;margin-bottom:10px;"
-          >
-
-          <button onclick="grantDankoeVerification()" style="
-            width:100%;
-            padding:12px;
-            border:0;
-            border-radius:12px;
-            cursor:pointer;
-          ">
-            🔵 Verify User
-          </button>
-
-          <button onclick="removeDankoeVerification()" style="
-            width:100%;
-            padding:12px;
-            margin-top:8px;
-            border:0;
-            border-radius:12px;
-            cursor:pointer;
-          ">
-            ⚪ Remove Verification
-          </button>
-
-          <p id="ownerActionStatus" style="
-            margin-top:10px;
-            font-size:13px;
-            opacity:.8;
-          "></p>
         </div>
 
         <button class="logout" onclick="logout()">Logout</button>
@@ -876,7 +812,7 @@ body::before {
         <small>Videos</small>
       </button>
 
-      <button onclick="openProfile()" class="nav-item">
+      <button onclick="showSection('profileSection', this)" class="nav-item">
         <span>👤</span>
         <small>Profile</small>
       </button>
@@ -1054,138 +990,16 @@ window.showSection = function(sectionId, button) {
   }
 };
 
-async function loadProfileBadge() {
-  const user = auth.currentUser;
-  const badge = document.getElementById("profileBadge");
-
-  if (!user || !badge) return;
-
-  try {
-    const userRef = doc(db, "users", user.uid);
-    const snap = await getDoc(userRef);
-
-    if (snap.exists() && snap.data().verified === true) {
-      badge.innerHTML = `
-        <span style="
-          display:inline-flex;
-          align-items:center;
-          gap:4px;
-          margin-top:0;
-          padding:4px 9px;
-          border-radius:999px;
-          background:rgba(60,150,255,.14);
-          border:1px solid rgba(80,180,255,.35);
-          color:#79caff;
-          font-size:13px;
-          font-weight:700;
-        ">
-          ✓ Verified
-        </span>
-      `;
-    } else {
-      badge.innerHTML = "";
-    }
-  } catch (error) {
-    console.error("Verification badge error:", error);
-  }
-}
-
-
-async function checkOwnerPanel() {
-  const user = auth.currentUser;
-  const panel = document.getElementById("ownerPanel");
-
-  if (!user || !panel) return;
-
-  if (isDankoeOwner(user.uid)) {
-    panel.classList.remove("hidden");
-  } else {
-    panel.classList.add("hidden");
-  }
-}
-
-window.grantDankoeVerification = async function() {
-  const user = auth.currentUser;
-  const uidInput = document.getElementById("verifyUserUid");
-  const status = document.getElementById("ownerActionStatus");
-
-  if (!user || !isDankoeOwner(user.uid)) {
-    status.textContent = "❌ Owner access required.";
-    return;
-  }
-
-  const targetUid = uidInput.value.trim();
-
-  if (!targetUid) {
-    status.textContent = "❌ Enter a user's UID.";
-    return;
-  }
-
-  try {
-    await setDoc(
-      doc(db, "users", targetUid),
-      {
-        verified: true
-      },
-      { merge: true }
-    );
-
-    status.textContent = "🔵 User verified successfully.";
-  } catch (error) {
-    console.error("Verification error:", error);
-    status.textContent = "❌ Could not verify user.";
-  }
-};
-
-window.removeDankoeVerification = async function() {
-  const user = auth.currentUser;
-  const uidInput = document.getElementById("verifyUserUid");
-  const status = document.getElementById("ownerActionStatus");
-
-  if (!user || !isDankoeOwner(user.uid)) {
-    status.textContent = "❌ Owner access required.";
-    return;
-  }
-
-  const targetUid = uidInput.value.trim();
-
-  if (!targetUid) {
-    status.textContent = "❌ Enter a user's UID.";
-    return;
-  }
-
-  try {
-    await setDoc(
-      doc(db, "users", targetUid),
-      {
-        verified: false
-      },
-      { merge: true }
-    );
-
-    status.textContent = "⚪ Verification removed.";
-  } catch (error) {
-    console.error("Verification removal error:", error);
-    status.textContent = "❌ Could not remove verification.";
-  }
-};
-
-window.openProfile = async function() {
+window.openProfile = function() {
   const profileButton = document.querySelectorAll(".nav-item")[3];
   window.showSection("profileSection", profileButton);
 
-  const user = auth.currentUser;
-
-  if (!user) return;
-
+  const email = document.getElementById("userEmail")?.textContent || "";
   const profileEmail = document.getElementById("profileEmail");
 
   if (profileEmail) {
-    profileEmail.textContent = user.email || "Dankoe User";
+    profileEmail.innerHTML = email + "<br><small style=\"opacity:.6\">UID: " + user.uid + "</small>";
   }
-
-  await loadProfileBadge();
-  await checkOwnerPanel();
 };
 
 window.sendMessage = async function() {
@@ -1259,7 +1073,6 @@ window.logout = async function() {
     if (user) {
 
       await createUserProfile(user);
-    await checkOwnerPanel();
 
       document.getElementById("authScreen").classList.add("hidden");
       document.getElementById("homeScreen").classList.remove("hidden");
